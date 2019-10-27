@@ -4,8 +4,10 @@ https://projecteuler.net/problem=601
 import functools
 import heapq
 import logging
+import pathlib
 
 logger = logging.getLogger('oily.divisibility_streaks')
+logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks.log'))
 
 def solve() -> int:
 	'''
@@ -31,6 +33,7 @@ def number_of_streaks_in_range(streak_size: int, range_end: int) -> int:
 		for n in range(1, range_end + 1)
 	)
 	log_cache_stats()
+	logger.info('number_of_streaks_in_range(%i, %i) = %i', streak_size, range_end, result)
 	return result
 
 def streak_with_cache(maxsize=128):
@@ -45,11 +48,15 @@ def streak_with_cache(maxsize=128):
 
 		n_to_streak[n] = streak_n
 		heapq.heappush(streak_heap, (streak_n, n))
-		if maxsize < len(heapq):
+		if maxsize < len(streak_heap):
 			_, lowest_priority_n = heapq.heappop(streak_heap)
 			del n_to_streak[lowest_priority_n]
 
 		return streak_n
+
+	streak_with_cache_instance.maxsize = maxsize
+	streak_with_cache_instance.n_to_streak = n_to_streak
+	streak_with_cache_instance.streak_heap = streak_heap
 
 	return streak_with_cache_instance
 
@@ -66,19 +73,13 @@ def streak_without_cache(n: int) -> int:
 			break
 	return streak_size
 
-streak = streak_with_cache()
+streak = streak_with_cache(maxsize=(2 ** 20))
 
 def is_not_divisble(dividend: int, divisor: int) -> bool:
 	return (dividend % divisor) != 0
 
 def log_cache_stats():
-	logger.debug('BEGIN: Cache Stats')
-	logger.debug(cache_stats(streak))
-	# logger.debug(cache_stats(is_not_divisble))
-	logger.debug('END: Cache Stats')
-
-def cache_stats(func):
-	info = func.cache_info()
-	hit_ratio = info.hits / (info.hits + info.misses)
-	fill_ratio = info.currsize / (info.maxsize)
-	return f'{func.__name__}: {hit_ratio:%} hits | {fill_ratio:%} full'
+	logger.debug('maxsize: %d | current size: %d', streak.maxsize, len(streak.streak_heap))
+	min_streak = heapq.nsmallest(1, streak.streak_heap)
+	max_streak = heapq.nlargest(1, streak.streak_heap)
+	logger.debug('min streak: %s | max streak: %s', min_streak, max_streak)
