@@ -1,6 +1,6 @@
 import pytest
 
-from . import divisibility_streaks_v2 as divisibility_streaks
+from . import divisibility_streaks
 
 class Test_number_of_streaks_in_range:
 	@pytest.mark.parametrize(

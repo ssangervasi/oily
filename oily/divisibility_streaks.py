@@ -9,7 +9,7 @@ import pathlib
 
 logging.basicConfig(level=logging.INFO, format='%(levelname)s %(asctime)s %(message)s')
 logger = logging.getLogger('oily.divisibility_streaks_v2')
-logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks_v2.log'))
+logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks.log'))
 
 
 def main():
@@ -35,22 +35,26 @@ def number_of_streaks_in_range(streak_size: int, range_end: int) -> int:
 	'''
 	logger.info('number_of_streaks_in_range(streak_size=%i, range_end=%i)', streak_size, range_end)
 	result = 0
-	first_ending = streak_size
+	first_ending = None
 
-	#	Step by `streak_size` because `(n - 1) + s` must be divisible by `s`.
-	for ending_at in range(streak_size, range_end + 1, streak_size):
+	# All future streak ends are at jumps of LCM
+	lcm = least_common_multiple(range(1, streak_size + 1))
+	logger.info('streak_size=%i, lcm=%i', streak_size, lcm)
+	for ending_at in range(streak_size, range_end + 1, lcm):
 		if is_streak(ending_at=ending_at, streak_size=streak_size):
 			first_ending = ending_at
 			break
+	else:
+		# Some streak sizes are impossible, such as 5
+		logger.info('streak_size=%i => %i', streak_size, result)
+		return result
 
-	# All future streak ends seem to be divisible by LCM
-	step_size = least_common_multiple(range(1, streak_size + 1))
-	logger.info('streak_size: %i, step_size: %i', streak_size, step_size)
-	for ending_at in range(first_ending, range_end + 1, step_size):
+	logger.info('streak_size=%i, first_ending=%i', streak_size, first_ending)
+	for ending_at in range(first_ending, range_end + 1, lcm):
 		if is_streak(ending_at=ending_at, streak_size=streak_size):
 			result += 1
 
-	logger.info('number_of_streaks_in_range(streak_size=%i, range_end=%i) = %i', streak_size, range_end, result)
+	logger.info('streak_size=%i => %i', streak_size, result)
 	return result
 
 def is_streak(ending_at: int, streak_size: int) -> bool:
