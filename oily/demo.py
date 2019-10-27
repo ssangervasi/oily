@@ -1,8 +1,13 @@
-from oily import risky_moon
+import logging
 
-solvers = [risky_moon.solve]
+from oily import divisibility_streaks
+
+problems = [divisibility_streaks]
 
 if __name__ == '__main__':
-    for solve in solvers:
-        solution = solve()
-        print(solution.description())
+	logging.basicConfig(level=logging.DEBUG)
+
+	for problem in problems:
+		print(problem.description)
+		solution = problem.solve()
+		print(f'solution: {solution}')

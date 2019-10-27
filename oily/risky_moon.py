@@ -1,3 +1,9 @@
+'''
+https://projecteuler.net/problem=353
+
+Put on hold because adding the sphere calculations is a bit too time consuming.
+'''
+
 import math
 from decimal import Decimal
 from typing import NamedTuple
