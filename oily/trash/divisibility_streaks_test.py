@@ -1,6 +1,6 @@
 import pytest
 
-from . import divisibility_streaks_v2 as divisibility_streaks
+from . import divisibility_streaks
 
 class Test_number_of_streaks_in_range:
 	@pytest.mark.parametrize(
@@ -16,20 +16,17 @@ class Test_number_of_streaks_in_range:
 		) == example['expected']
 
 	def test_example_to_optimize(self):
-		result = divisibility_streaks.number_of_streaks_in_range(8, (4 ** 8))		
-		assert result == 52
+		result = divisibility_streaks.number_of_streaks_in_range(13, 67108864)
+		print(result)		
+		assert result == 1
 
 
-class Test_is_streak:
+class Test_streak:
 	@pytest.mark.parametrize(
 		'example', [
-			{ 'ending_at': 2, 'streak_size': 1, 'expected': True },
-			{ 'ending_at': 2, 'streak_size': 2, 'expected': False },
-			{ 'ending_at': 16, 'streak_size': 4, 'expected': True },
+			{ 'n': 13, 'expected': 4 },
+			{ 'n': 120, 'expected': 1 },
 		]
 	)
 	def test_parametrized_examples(self, example):
-		assert divisibility_streaks.is_streak(
-			ending_at=example['ending_at'],
-			streak_size=example['streak_size'],
-		) == example['expected']
+		assert divisibility_streaks.streak(example['n']) == example['expected']

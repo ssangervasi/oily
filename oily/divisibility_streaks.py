@@ -4,82 +4,83 @@ https://projecteuler.net/problem=601
 import functools
 import heapq
 import logging
+import math
 import pathlib
 
-logger = logging.getLogger('oily.divisibility_streaks')
-logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks.log'))
+logging.basicConfig(level=logging.INFO, format='%(levelname)s %(asctime)s %(message)s')
+logger = logging.getLogger('oily.divisibility_streaks_v2')
+logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks_v2.log'))
+
+
+def main():
+	logger.info(solve.__doc__)
+	solution = solve()
+	logger.info(f'solution: {solution}')
 
 def solve() -> int:
 	'''
 	Sum of the number of streaks of size `i` in range `4^i` for `1 <= i <= 31`.
 	'''
-	sum(
+	return sum(
 		(
 			number_of_streaks_in_range(streak_size=i, range_end=(4 ** i))
 			for i in range(1, 32)
 		)
 	)
 
-description = solve.__doc__
-
 def number_of_streaks_in_range(streak_size: int, range_end: int) -> int:
 	'''
 	`number_of_streaks_in_range(streak_size, range_end) = P(s, N)`
 		=> The number of integers `n`, where `1 <= n <= N`, for which `streak(n) = s`.
 	'''
-	logger.debug('number_of_streaks_in_range(%i, %i)', streak_size, range_end)
-	result = sum(
-		1 if streak(n) == streak_size else 0
-		for n in range(1, range_end + 1)
-	)
-	log_cache_stats()
-	logger.info('number_of_streaks_in_range(%i, %i) = %i', streak_size, range_end, result)
+	logger.info('number_of_streaks_in_range(streak_size=%i, range_end=%i)', streak_size, range_end)
+	result = 0
+	first_ending = streak_size
+
+	#	Step by `streak_size` because `(n - 1) + s` must be divisible by `s`.
+	for ending_at in range(streak_size, range_end + 1, streak_size):
+		if is_streak(ending_at=ending_at, streak_size=streak_size):
+			first_ending = ending_at
+			break
+
+	# All future streak ends seem to be divisible by LCM
+	step_size = least_common_multiple(range(1, streak_size + 1))
+	logger.info('streak_size: %i, step_size: %i', streak_size, step_size)
+	for ending_at in range(first_ending, range_end + 1, step_size):
+		if is_streak(ending_at=ending_at, streak_size=streak_size):
+			result += 1
+
+	logger.info('number_of_streaks_in_range(streak_size=%i, range_end=%i) = %i', streak_size, range_end, result)
 	return result
 
-def streak_with_cache(maxsize=128):
-	n_to_streak = {}
-	streak_heap = []
-	
-	def streak_with_cache_instance(n: int) -> int:
-		if n in n_to_streak:
-			return n_to_streak[n]
-		
-		streak_n = streak_without_cache(n)
+def is_streak(ending_at: int, streak_size: int) -> bool:
+	logger.debug('is_streak(ending_at=%i, streak_size=%i)', ending_at, streak_size) 
 
-		n_to_streak[n] = streak_n
-		heapq.heappush(streak_heap, (streak_n, n))
-		if maxsize < len(streak_heap):
-			_, lowest_priority_n = heapq.heappop(streak_heap)
-			del n_to_streak[lowest_priority_n]
+	# Streak does not end here if the next number continues the streak.
+	if is_divisible(ending_at + 1, streak_size + 1):
+		logger.debug('=> False - next number would continue streak')
+		return False
 
-		return streak_n
+	# Step backwards because higher streaks are less common, which will let
+	# us return earlier for high numbers:
+	for back_step in range(0, streak_size):
+		earlier_streak_number = ending_at - back_step
+		earlier_streak_size = streak_size - back_step
+		if not is_divisible(earlier_streak_number, earlier_streak_size):
+			logger.debug('=> False - %i breaks streak of size %i', earlier_streak_number, earlier_streak_size)
+			return False
 
-	streak_with_cache_instance.maxsize = maxsize
-	streak_with_cache_instance.n_to_streak = n_to_streak
-	streak_with_cache_instance.streak_heap = streak_heap
+	logger.debug('=> True')
+	return True
 
-	return streak_with_cache_instance
+def is_divisible(dividend: int, divisor: int) -> bool:
+	return (dividend % divisor) == 0
 
-def streak_without_cache(n: int) -> int:
-	'''
-	`streak(n) = k = streak_size`
-		=> The smallest positive integer `k` such that `n + k` is not divisible by `k + 1`.
-	'''
-	# This is an upper bound on `k` because `n + (n + 1)` is not divisible by `n + 1`.
-	upper_bound = n + 1
-	for streak_size in range(1, upper_bound):
-		divisor = streak_size + 1
-		if is_not_divisble(n + streak_size, divisor):
-			break
-	return streak_size
+def least_common_multiple(nums):
+	def lcm_of_pair(a, b):
+		return (a * b) // math.gcd(a, b)
 
-streak = streak_with_cache(maxsize=(2 ** 20))
+	return functools.reduce(lcm_of_pair, nums)
 
-def is_not_divisble(dividend: int, divisor: int) -> bool:
-	return (dividend % divisor) != 0
-
-def log_cache_stats():
-	logger.debug('maxsize: %d | current size: %d', streak.maxsize, len(streak.streak_heap))
-	min_streak = heapq.nsmallest(1, streak.streak_heap)
-	max_streak = heapq.nlargest(1, streak.streak_heap)
-	logger.debug('min streak: %s | max streak: %s', min_streak, max_streak)
+if __name__ == '__main__':
+	main()
