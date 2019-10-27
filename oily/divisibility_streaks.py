@@ -2,20 +2,37 @@
 https://projecteuler.net/problem=601
 '''
 import functools
-import heapq
 import logging
 import math
 import pathlib
+import textwrap
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s %(asctime)s %(message)s')
-logger = logging.getLogger('oily.divisibility_streaks_v2')
-logger.addHandler(logging.FileHandler(pathlib.Path(__name__).parent.parent / 'logs' / 'oily.divisibility_streaks.log'))
+logger = logging.getLogger(__spec__.name)
 
+def main(argv):
+	setup_logging(argv)
+	
+	description = textwrap.dedent(solve.__doc__)
+	print(description)
+	logger.info(description)
 
-def main():
-	logger.info(solve.__doc__)
 	solution = solve()
-	logger.info(f'solution: {solution}')
+	
+	solution_description = f'Solution: {solution}'
+	print(solution_description)
+	logger.info(solution_description)
+
+def setup_logging(argv):
+	log_level = None
+	if '--info' in argv:
+		log_level = logging.INFO
+	elif '--debug' in argv:
+		log_level = logging.DEBUG
+
+	if log_level is not None:
+		logging.basicConfig(level=log_level, format='%(levelname)s %(asctime)s %(message)s')
+		log_path = pathlib.Path(__file__).parent.parent / 'logs' / f'{__spec__.name}.log'
+		logger.addHandler(logging.FileHandler(log_path))
 
 def solve() -> int:
 	'''
@@ -37,32 +54,32 @@ def number_of_streaks_in_range(streak_size: int, range_end: int) -> int:
 	result = 0
 	first_ending = None
 
-	# All future streak ends are at jumps of LCM
+	# All streak ends are at jumps of LCM.
 	lcm = least_common_multiple(range(1, streak_size + 1))
-	logger.info('streak_size=%i, lcm=%i', streak_size, lcm)
+	logger.debug('streak_size=%i, lcm=%i', streak_size, lcm)
+
 	for ending_at in range(streak_size, range_end + 1, lcm):
 		if is_streak(ending_at=ending_at, streak_size=streak_size):
 			first_ending = ending_at
 			break
 	else:
-		# Some streak sizes are impossible, such as 5
-		logger.info('streak_size=%i => %i', streak_size, result)
+		# Some streak sizes are impossible, such as 5.
+		logger.debug('streak_size=%i => %i', streak_size, result)
 		return result
 
-	logger.info('streak_size=%i, first_ending=%i', streak_size, first_ending)
+	logger.debug('streak_size=%i, first_ending=%i', streak_size, first_ending)
+
 	for ending_at in range(first_ending, range_end + 1, lcm):
 		if is_streak(ending_at=ending_at, streak_size=streak_size):
 			result += 1
 
 	logger.info('streak_size=%i => %i', streak_size, result)
+
 	return result
 
 def is_streak(ending_at: int, streak_size: int) -> bool:
-	logger.debug('is_streak(ending_at=%i, streak_size=%i)', ending_at, streak_size) 
-
 	# Streak does not end here if the next number continues the streak.
 	if is_divisible(ending_at + 1, streak_size + 1):
-		logger.debug('=> False - next number would continue streak')
 		return False
 
 	# Step backwards because higher streaks are less common, which will let
@@ -71,20 +88,19 @@ def is_streak(ending_at: int, streak_size: int) -> bool:
 		earlier_streak_number = ending_at - back_step
 		earlier_streak_size = streak_size - back_step
 		if not is_divisible(earlier_streak_number, earlier_streak_size):
-			logger.debug('=> False - %i breaks streak of size %i', earlier_streak_number, earlier_streak_size)
 			return False
 
-	logger.debug('=> True')
 	return True
 
 def is_divisible(dividend: int, divisor: int) -> bool:
 	return (dividend % divisor) == 0
 
-def least_common_multiple(nums):
+def least_common_multiple(nums: 'List[int]') -> int:
 	def lcm_of_pair(a, b):
 		return (a * b) // math.gcd(a, b)
 
 	return functools.reduce(lcm_of_pair, nums)
 
 if __name__ == '__main__':
-	main()
+	import sys
+	main(sys.argv)
